@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "simple-mcp-server": {
+      "name": "本地 MCP 服务器",
+      "url": "http://localhost:8080/sse",
+      "enabled": true
+    }
+  }
+}
