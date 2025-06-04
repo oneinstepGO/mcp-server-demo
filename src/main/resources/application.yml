@@ -1,6 +1,13 @@
+server:
+  shutdown: GRACEFUL
+
 spring:
+  application:
+    name: cem-mcp-server
+  profiles:
+    active: test
   ai:
     mcp:
       server:
-        name: simple-mcp-server
-        instructions: "?????????????????????????"
+        name: cem-mcp-server
+        request-timeout: 30s

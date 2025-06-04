@@ -1,5 +1,6 @@
-package com.example.mcpserver.tools;
+package com.oneisnstep.mcpserver.tools;
 
+import com.oneisnstep.mcpserver.annotation.ToolBean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -7,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+@ToolBean
 public class SimpleTool {
 
     /**

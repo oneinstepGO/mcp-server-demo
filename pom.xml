@@ -7,18 +7,19 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
+        <version>3.3.12</version>
         <relativePath/>
     </parent>
 
-    <groupId>com.example</groupId>
+    <groupId>com.oneinstep</groupId>
     <artifactId>mcp-server-demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>mcp-server</name>
-    <description>简单的 MCP Server 示例项目</description>
 
     <properties>
         <java.version>21</java.version>
+        <spring-ai.version>1.0.0</spring-ai.version>
+        <spring-cloud-nacos.version>2023.0.3.3</spring-cloud-nacos.version>
+        <spring-cloud-starter.version>4.3.0</spring-cloud-starter.version>
     </properties>
 
     <dependencyManagement>
@@ -34,19 +35,35 @@
     </dependencyManagement>
 
     <dependencies>
+
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Spring Boot Web Starter for SSE -->
+        <!-- spring-boot-starter-actuator -->
         <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
-            <version>1.0.0</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+            <version>${spring-ai.version}</version>
+        </dependency>
+
+        <!-- Spring Boot Web Starter for SSE -->
+        <!--        <dependency>-->
+        <!--            <groupId>org.springframework.ai</groupId>-->
+        <!--            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>-->
+        <!--            <version>${spring-ai.version}</version>-->
+        <!--        </dependency>-->
+
+        <!-- Nacos-discovery -->
+
+        <!-- lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
