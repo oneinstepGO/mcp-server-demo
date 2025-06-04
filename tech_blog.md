@@ -19,8 +19,8 @@ MCP 服务器基本上能提供三种能力：
 咱们需要准备这些技术：
 
 - **Java**: JDK 21（没错，用新版的）
-- **Spring Boot**: 3.3.5
-- **Spring AI**: `spring-ai-starter-mcp-server-webmvc`（这是专门用来做 MCP 服务器的）
+- **Spring Boot**: 3.3.12
+- **Spring AI**: `spring-ai-starter-mcp-server-webflux`（这是专门用来做 MCP 服务器的）
 - **构建工具**: Maven（老朋友了）
 - **通信方式**: SSE (Server-Sent Events)（就是服务器向客户端推送数据的一种方式）
 
@@ -45,88 +45,61 @@ mcp-server-demo
 ### Maven 配置 (pom.xml)
 
 ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.5</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-    <groupId>com.example</groupId>
-    <artifactId>mcp-server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>mcp-server</name>
-    <description>MCP Server Demo with Spring Boot</description>
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.12</version>
+    <relativePath/>
+</parent>
 
-    <properties>
-        <java.version>21</java.version>
-    </properties>
+<properties>
+<java.version>21</java.version>
+<spring-ai.version>1.0.0</spring-ai.version>
+<spring-cloud-nacos.version>2023.0.3.3</spring-cloud-nacos.version>
+<spring-cloud-starter.version>4.3.0</spring-cloud-starter.version>
+</properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.modelcontextprotocol.sdk</groupId>
-                <artifactId>mcp-bom</artifactId>
-                <version>0.10.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+<dependencyManagement>
+<dependencies>
+    <dependency>
+        <groupId>io.modelcontextprotocol.sdk</groupId>
+        <artifactId>mcp-bom</artifactId>
+        <version>0.10.0</version>
+        <type>pom</type>
+        <scope>import</scope>
+    </dependency>
+</dependencies>
+</dependencyManagement>
 
-    <dependencies>
-        <!-- Spring Boot 基础依赖 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
-        </dependency>
+<dependencies>
 
-        <!-- 这个是重点，MCP 服务器的依赖 -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
-            <version>1.0.0</version>
-        </dependency>
+<!-- Spring Boot Starter -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter</artifactId>
+</dependency>
 
-        <!-- 测试用的 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+<!-- Spring AI 核心依赖，用来构建 MCP Server -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+    <version>${spring-ai.version}</version>
+</dependency>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>
+<!-- 也可以用这个 Spring Boot Web Starter for SSE -->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>-->
+<!--            <version>${spring-ai.version}</version>-->
+<!--        </dependency>-->
+
+</dependencies>
+
 ```
 
 ## 步骤 2：创建主程序入口
 
-就是普通的 Spring Boot 应用入口，没啥特别的：
-
-```java
-package com.example.mcpserver;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class McpServerApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(McpServerApplication.class, args);
-    }
-}
-```
+就是普通的 Spring Boot 应用入口，没啥特别的。
 
 ## 步骤 3：开始写好玩的工具
 
@@ -189,74 +162,12 @@ public class WeatherTool {
     public String getWeatherForecast(
             @McpToolParam(name = "latitude", description = "纬度") double latitude,
             @McpToolParam(name = "longitude", description = "经度") double longitude) {
-        try {
-            // 先获取预报网格端点
-            String pointsUrl = String.format("%s/points/%.4f,%.4f", NWS_API_BASE, latitude, longitude);
-            Map<String, Object> pointsData = restTemplate.getForObject(pointsUrl, Map.class);
-
-            if (pointsData == null || !pointsData.containsKey("properties")) {
-                return "哎呀，获取不到这个地方的天气数据。";
-            }
-
-            // 从响应中获取预报 URL
-            Map<String, Object> properties = (Map<String, Object>) pointsData.get("properties");
-            String forecastUrl = (String) properties.get("forecast");
-            Map<String, Object> forecastData = restTemplate.getForObject(forecastUrl, Map.class);
-
-            if (forecastData == null || !forecastData.containsKey("properties")) {
-                return "拿不到详细预报，可能是网络问题。";
-            }
-
-            // 把数据整理成易读的格式
-            Map<String, Object> forecastProps = (Map<String, Object>) forecastData.get("properties");
-            Object[] periods = (Object[]) forecastProps.get("periods");
-
-            StringBuilder result = new StringBuilder();
-            for (int i = 0; i < Math.min(periods.length, 5); i++) {  // 只显示接下来的 5 个时段
-                Map<String, Object> period = (Map<String, Object>) periods[i];
-                result.append(period.get("name")).append(":\n");
-                result.append("温度: ").append(period.get("temperature")).append("°").append(period.get("temperatureUnit")).append("\n");
-                result.append("风: ").append(period.get("windSpeed")).append(" ").append(period.get("windDirection")).append("\n");
-                result.append("预报: ").append(period.get("detailedForecast")).append("\n\n");
-            }
-
-            return result.toString();
-        } catch (Exception e) {
-            return "获取天气预报时出错啦: " + e.getMessage();
-        }
+        // 查询天气
     }
 
     @McpTool(name = "getAlerts", description = "获取指定州的天气警报")
     public String getAlerts(@McpToolParam(name = "state", description = "美国州代码，例如 CA, NY") String state) {
-        try {
-            String url = String.format("%s/alerts/active/area/%s", NWS_API_BASE, state);
-            Map<String, Object> data = restTemplate.getForObject(url, Map.class);
-
-            if (data == null || !data.containsKey("features")) {
-                return "获取不到警报信息，可能是接口问题。";
-            }
-
-            Object[] features = (Object[]) data.get("features");
-            if (features.length == 0) {
-                return "好消息！这个州目前没有任何天气警报。";
-            }
-
-            StringBuilder result = new StringBuilder();
-            for (Object feature : features) {
-                Map<String, Object> featureMap = (Map<String, Object>) feature;
-                Map<String, Object> props = (Map<String, Object>) featureMap.get("properties");
-
-                result.append("事件: ").append(props.get("event")).append("\n");
-                result.append("区域: ").append(props.get("areaDesc")).append("\n");
-                result.append("严重程度: ").append(props.get("severity")).append("\n");
-                result.append("描述: ").append(props.get("description")).append("\n");
-                result.append("指示: ").append(props.getOrDefault("instruction", "没有具体指示")).append("\n\n");
-            }
-
-            return result.toString();
-        } catch (Exception e) {
-            return "获取警报时出错啦: " + e.getMessage();
-        }
+        // 查询报警
     }
 }
 ```
@@ -269,33 +180,26 @@ public class WeatherTool {
 
 ```yaml
 spring:
+  application:
+    name: mcp-server-demo
+  profiles:
+    active: test
   ai:
     mcp:
       server:
-        transport:
-          sse:
-            enabled: true
-            path: /sse
-server:
-  port: 8080
+        name: mcp-server-demo
+        request-timeout: 30s
 ```
 
-这里的关键是 `path: /sse`，这是 MCP 服务器的端点，客户端会通过这个路径连接到服务器。
-
-## 步骤 5：写个启动脚本
-
-创建一个简单的运行脚本 `run.sh`，省得每次都敲命令：
+## 步骤 5：启动应用
 
 ```bash
-#!/bin/bash
 mvn clean package spring-boot:run
 ```
 
-别忘了给脚本加执行权限：
+> 全部源码在：https://github.com/oneinstepGO/mcp-server-demo.git
 
-```bash
-chmod +x run.sh
-```
+---
 
 ## MCP 是怎么工作的？
 
@@ -325,51 +229,44 @@ sequenceDiagram
 
 ## 在 Cursor 中试试我们的服务器
 
-### 步骤 1：配置 Cursor
+### 步骤 1：启动服务器
 
-1. 在项目根目录下创建 `.cursor/mcp.json` 文件：
+### 步骤 2：配置 Cursor
+
+在某个项目根目录下创建 `.cursor/mcp.json` 文件，添加如下内容：
 
 ```json
 {
   "mcpServers": {
-    "simple-mcp-server": {
-      "name": "本地 MCP 服务器",
-      "url": "http://localhost:8080/sse",
-      "enabled": true
+    "mcp-server-demo": {
+      "url": "http://localhost:8080/sse"
     }
   }
 }
 ```
 
+![](https://mp-img-1300842660.cos.ap-guangzhou.myqcloud.com/1749052860662-344a63b5-4fec-4288-b1e2-8a100d711831.png)
+
 就这么简单，告诉 Cursor 我们的服务器在哪里。
 
-### 步骤 2：启动服务器
-
-运行我们的脚本：
-
-```bash
-./run.sh
-```
-
-或者直接用 Maven 命令：
-
-```bash
-mvn clean package spring-boot:run
-```
 
 ### 步骤 3：在 Cursor 里玩起来
 
-1. 打开 Cursor 编辑器
-2. 打开设置，找到 MCP 相关配置
-3. 刷新 MCP 工具
-4. 开始和 Claude 聊天，让它用我们的工具
+1. 打开 Cursor 编辑器，打开设置，找到 MCP 相关配置
+2. 这是应该可以看到我们的 `Mcp Server`，打开开关，应该就可以看到我们编写的 `Mcp Server` 提供的几个工具。
+3. 在 Cursor 中进行聊天 ，让它使用我们的工具
 
 试试这些问题：
 
-- "现在几点了？"（Claude 会用 timestampTool）
-- "5 加 7 等于多少？"（Claude 会用 simpleMathTool）
-- "纽约州有什么天气警报吗？"（Claude 会用 getAlerts 工具）
-- "旧金山现在天气怎么样？"（Claude 会用 getWeatherForecastByLocation 工具）
+- "现在几点了？"（Cursor 会用 `timestampTool`）
+- "5 加 7 等于多少？"（Cursor 会用 `simpleMathTool`）
+- "纽约州有什么天气警报吗？"（Cursor 会用 `getAlerts` 工具）
+- "旧金山现在天气怎么样？"（Cursor 会用 `getWeatherForecastByLocation` 工具）
+
+
+![](https://mp-img-1300842660.cos.ap-guangzhou.myqcloud.com/1749052439894-977ea921-499c-4932-bd81-bd8021a38438.png)
+
+如上图所示，出现了 `Call MCP Tool`，并且调用了我们的工具，例如调用 `getWeatherForecastByLocation` ，并且输出了美国某个州的天气，就说明我们搭建的 `Mcp Server` 成功了。
 
 ## 整个过程是怎么连起来的？
 
@@ -390,19 +287,13 @@ graph TD
     B -->|显示回答| A
 ```
 
-## 调试小技巧
+## 题外话
 
-1. **看日志**：Spring Boot 的日志很详细，能帮你找出问题
-2. **用 Cursor 的开发者工具**：按 F12 可以看到网络请求和响应
-3. **直接测试**：可以用 Postman 或 curl 直接调用你的 MCP 服务器
+除了 `Cursor` 和 `Trae`，也可以用官方提供的 `inspector` 网页工具调试 MCP。
+GitHub地址：https://github.com/modelcontextprotocol/inspector
 
-## 一些小建议
 
-1. **工具名字要直观**：起个好名字，让 AI 一看就懂
-2. **参数描述要清晰**：详细描述每个参数，帮助 AI 正确使用
-3. **处理好错误**：返回友好的错误信息，不要让用户一头雾水
-4. **性能要好**：工具执行要快，用户不喜欢等太久
-5. **注意安全**：验证输入，防止恶意请求
+![](https://mp-img-1300842660.cos.ap-guangzhou.myqcloud.com/1749053253114-21f1d32b-834e-4b8d-a6f2-6f91c97a4b35.png)
 
 ## 总结一下
 

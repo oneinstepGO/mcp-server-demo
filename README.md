@@ -8,8 +8,8 @@ sse 进行通信。
 ## 技术栈
 
 - **Java**: JDK 21
-- **Spring Boot**: 3.3.5
-- **Spring AI**: `spring-ai-starter-mcp-server-webmvc` 用于 MCP 服务器功能
+- **Spring Boot**: 3.3.12
+- **Spring AI**: `spring-ai-starter-mcp-server-webflux` 用于 MCP 服务器功能
 - **构建工具**: Maven
 - **通信协议**: sse
 
@@ -38,9 +38,9 @@ sse 进行通信。
 
 <!-- Spring Boot Web Starter for SSE -->
 <dependency>
-   <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
-   <version>1.0.0</version>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+      <version>${spring-ai.version}</version>
 </dependency>
 
 </dependencies>
@@ -58,6 +58,7 @@ sse 进行通信。
    - 实现了以下工具：
      - `WeatherTool`: 查询天气预报和天气警报
      - `SimpleTool`: 提供回声、简单数学和时间戳功能
+     - `JsonTool`: 将 JSON 字符串转换为 Java 类代码，并根据 Java 类定义输出一个类型规范的示例 JSON 字符串
    - 工具的定义遵循 MCP 规范，使用 Java 类型提示和注解来自动生成工具定义。
 
 ## 项目结构
@@ -65,10 +66,12 @@ sse 进行通信。
 ```
 cem_mcp_server
   ├── src/main/java/com/example/mcpserver
+  │   ├── config/                          # 配置类
   │   ├── McpServerApplication.java        # 主应用程序类
   │   └── tools/                           # 工具实现
   │       ├── WeatherTool.java             # 天气工具
   │       └── SimpleTool.java              # 简单工具
+  │       ├── JsonTool.java                # JSON 工具
   ├── src/main/resources
   │   └── application.yml                  # 应用配置
   └── pom.xml                              # Maven 配置
@@ -76,13 +79,7 @@ cem_mcp_server
 
 # 编译和运行
 
-## 使用脚本运行
-
-```bash
-./run.sh
-```
-
-## 或者使用 Maven 命令
+## 使用 Maven 命令
 
 ```bash
 mvn clean package spring-boot:run
@@ -116,7 +113,7 @@ mvn clean package spring-boot:run
       ```json
       {
         "mcpServers": {
-          "simple-mcp-server": {
+          "mcp-serve-demo": {
             "name": "本地 MCP 服务器",
             "url": "http://localhost:8080/sse",
             "enabled": true
@@ -127,5 +124,9 @@ mvn clean package spring-boot:run
 1. 打开 Cursor 设置
 2. 找到 MCP 相关配置，刷新本MCP工具。
 3. 现在可以在 Cursor 中使用本服务器提供的工具
+4. 提问：
+    - 纽约今天天气怎么样？
+    - 请根据我给出的java类定义，输出一个示例json
+
 
 

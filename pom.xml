@@ -61,8 +61,6 @@
         <!--            <version>${spring-ai.version}</version>-->
         <!--        </dependency>-->
 
-        <!-- Nacos-discovery -->
-
         <!-- lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

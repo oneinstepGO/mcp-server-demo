@@ -18,7 +18,7 @@ public class ToolConfig {
 
     @Bean
     public ToolCallbackProvider toolCallbackProvider() {
-        // 获取所有工具Bean（假设都在tools包下且有@Service注解）
+        // 获取所有工具Bean（假设都在tools包下且有ToolBean注解）
         Map<String, Object> toolBeans = applicationContext.getBeansWithAnnotation(ToolBean.class);
         return MethodToolCallbackProvider.builder()
                 .toolObjects(toolBeans.values().toArray())

@@ -3,11 +3,11 @@ server:
 
 spring:
   application:
-    name: cem-mcp-server
+    name: mcp-server-demo
   profiles:
     active: test
   ai:
     mcp:
       server:
-        name: cem-mcp-server
+        name: mcp-server-demo
         request-timeout: 30s
